@@ -1,0 +1,40 @@
+// At this point, model_output[icase] contains the model's output for this case,
+// and is_target[icase] contains 1 if this case is a target and 0 otherwise.
+// We sort 'model_output' ascending, and simultaneously move each case's true class
+// (target versus non-target) to keep the model outputs and true classes together.
+
+// Some applications find it useful to know the area under the ROC curve for
+// only the highest sensitivity section.  This implementation includes
+// optional code for this.  Feel free to change 0.9 to whatever you need.
+// You can even add more of these by inserting additional 'if' blocks.
+
+   qsortdsi ( 0 , n-1 , model_output , is_target ) ; // Sort all n outputs ascending, moving class
+
+   tp_count = 0 ;         // Counts true positives
+   fp_count = 0 ;         // Counts false positives
+   j = n-1 ;              // Will count down as icase counts up
+   k = 0 ;                // Will cumulate (unnormalized) ROC area here
+   ROC90 = -1.0 ;         // Will cumulate ROC area for sensitivity >= .9
+
+   for (icase=0 ; icase<n ; icase++) {
+      if (is_target[j--]) {  // If this is truly a target
+         ++tp_count ;        // Then it is a true positive at this threshold
+         k += fp_count ;     // Count this thin rectangle
+
+         // Optional code computes ROC area for sensitivity >= .9
+         if (tp_count / (double) n_targets >= 0.9) {
+            if (ROC90 < 0.0) // Start with partial rectangle
+               ROC90 = (tp_count / (double) n_targets - 0.9) /
+                       (1.0 / (double) n_targets) * (n_nontargets - fp_count) ;
+            else 
+               ROC90 += n_nontargets - fp_count ;  // Area to right of curve
+            }
+
+         } // If this is truly a target
+
+      else                // But if it is not a target
+         ++fp_count ;     // Then it is a false positive
+      } // For all cases
+
+   ROC_area = 1.0 - (double) k / ((double) n_targets * (double) n_nontargets) ) ;
+   ROC90 = ROC90 / ((1.0 - 0.9) * (double) n_targets * (double) n_nontargets) ) ;
